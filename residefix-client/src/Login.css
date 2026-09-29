@@ -48,4 +48,14 @@ input {
 }
 .submit-btn:hover { background: #1445b0; }
 .error { color: #c81e1e; font-size: 14px; margin: 4px 0; }
+.success { color: #0f9d58; font-size: 14px; margin: 4px 0; }
+select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+}
 .footer-text { text-align: center; font-size: 14px; }
