@@ -1,16 +1,19 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { API_URL } from "./api";
 import "./Login.css";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.email.includes("@")) {
       setError("Please enter a valid email address.");
@@ -20,9 +23,34 @@ export default function Login() {
       setError("Password must be at least 6 characters.");
       return;
     }
+
     setError("");
-    // Backend call goes here later (POST /api/auth/login)
-    console.log("Login submitted:", form);
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Login failed. Please try again.");
+        return;
+      }
+
+      // Save token + user info so the app knows we're logged in
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      navigate("/dashboard");
+    } catch {
+      setError("Could not reach the server. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -60,7 +88,9 @@ export default function Login() {
 
         {error && <p className="error">{error}</p>}
 
-        <button type="submit" className="submit-btn">Log In</button>
+        <button type="submit" className="submit-btn" disabled={loading}>
+          {loading ? "Logging in..." : "Log In"}
+        </button>
         <p className="footer-text">
           No account? <Link to="/signup">Register</Link>
         </p>

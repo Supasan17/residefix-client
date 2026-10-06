@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { API_URL } from "./api";
 import "./Login.css";
 
 export default function Signup() {
@@ -12,12 +13,13 @@ export default function Signup() {
   });
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (form.name.trim().length < 2) {
@@ -38,9 +40,34 @@ export default function Signup() {
     }
 
     setError("");
-    // Backend call goes here later (POST /api/auth/signup)
-    console.log("Signup submitted:", form);
-    setSuccess(true);
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          role: form.role,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Signup failed. Please try again.");
+        return;
+      }
+
+      // Signup succeeded — send them to log in
+      navigate("/login");
+    } catch {
+      setError("Could not reach the server. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -105,9 +132,10 @@ export default function Signup() {
         />
 
         {error && <p className="error">{error}</p>}
-        {success && <p className="success">Account created! You can now log in.</p>}
 
-        <button type="submit" className="submit-btn">Sign Up</button>
+        <button type="submit" className="submit-btn" disabled={loading}>
+          {loading ? "Creating account..." : "Sign Up"}
+        </button>
         <p className="footer-text">
           Already have an account? <Link to="/login">Log In</Link>
         </p>
