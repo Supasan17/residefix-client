@@ -19,13 +19,15 @@ router.post("/", async (req, res) => {
     const complaint = await Complaint.create({
       title,
       description,
-      category,
-      priority,
+      category: category || "other",
+      priority: priority || "medium",
       property,
       createdBy: req.user.id,
     });
 
-    res.status(201).json(complaint);
+    const populatedComplaint = await complaint.populate("createdBy", "name email");
+
+    res.status(201).json(populatedComplaint);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error creating complaint" });
@@ -54,11 +56,16 @@ router.patch("/:id", async (req, res) => {
       return res.status(403).json({ message: "Only managers can update complaint status" });
     }
 
+    const validStatuses = ["open", "in-progress", "resolved"];
+    if (req.body.status && !validStatuses.includes(req.body.status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
     const complaint = await Complaint.findByIdAndUpdate(
       req.params.id,
       { status: req.body.status },
       { new: true }
-    );
+    ).populate("createdBy", "name email");
 
     if (!complaint) {
       return res.status(404).json({ message: "Complaint not found" });
